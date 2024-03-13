@@ -1,51 +1,63 @@
-import { Entity, MikroORM, PrimaryKey, Property } from '@mikro-orm/sqlite';
-
-@Entity()
-class User {
-
-  @PrimaryKey()
-  id!: number;
-
-  @Property()
-  name: string;
-
-  @Property({ unique: true })
-  email: string;
-
-  constructor(name: string, email: string) {
-    this.name = name;
-    this.email = email;
-  }
-
-}
+import { BaseEntity, Embeddable, Embedded, Entity, MikroORM, ObjectId, Opt, PrimaryKey, Property, SerializedPrimaryKey, Unique } from '@mikro-orm/mongodb';
 
 let orm: MikroORM;
 
 beforeAll(async () => {
   orm = await MikroORM.init({
-    dbName: ':memory:',
+    clientUrl:'mongodb://admin:password@localhost:21111/',
+    dbName:'repro-test',
     entities: [User],
     debug: ['query', 'query-params'],
     allowGlobalContext: true, // only for testing
   });
-  await orm.schema.refreshDatabase();
+  await orm.em.getCollection(User).indexes().then(console.log)
+  await orm.schema.refreshDatabase()
+  await orm.em.getCollection(User).indexes().then(console.log)
+  await orm.schema.dropIndexes()
 });
 
 afterAll(async () => {
   await orm.close(true);
 });
 
-test('basic CRUD example', async () => {
-  orm.em.create(User, { name: 'Foo', email: 'foo' });
-  await orm.em.flush();
-  orm.em.clear();
+export default class Base extends BaseEntity {
+  @PrimaryKey()
+    _id: ObjectId = new ObjectId();
 
-  const user = await orm.em.findOneOrFail(User, { email: 'foo' });
-  expect(user.name).toBe('Foo');
-  user.name = 'Bar';
-  orm.em.remove(user);
-  await orm.em.flush();
+  @SerializedPrimaryKey()
+    id!: string;
 
-  const count = await orm.em.count(User, { email: 'foo' });
-  expect(count).toBe(0);
-});
+  constructor() {
+    super();
+  }
+}
+
+@Embeddable()
+class UserInfo {
+  @Property()
+  role!:string
+
+  @Property()
+  id!:string
+
+}
+
+
+@Unique({properties:['info_id','info_role']})
+@Entity()
+class User extends Base{
+  
+  @Embedded(()=>UserInfo,{object:true})
+  info:Opt<UserInfo>
+
+  constructor() {
+    super()
+    this.info = {
+      role:'ADMIN',
+      id:crypto.randomUUID()
+    }
+  }
+}
+
+
+test('for passing jest', async ()=>{})

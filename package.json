@@ -5,14 +5,14 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "start": "jest",
+    "start": "tsc && jest",
     "test": "jest"
   },
   "author": "Martin Adamek",
   "license": "MIT",
   "dependencies": {
-    "@mikro-orm/core": "next",
-    "@mikro-orm/sqlite": "next",
+    "@mikro-orm/core": "^6.1.9",
+    "@mikro-orm/mongodb": "6.1.9",
     "reflect-metadata": "^0.1.13"
   },
   "devDependencies": {
